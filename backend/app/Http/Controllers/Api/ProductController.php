@@ -34,6 +34,7 @@ class ProductController extends Controller
         if (!$product) {
             return response()->json(['message' => 'Not found'], 404);
         }
+        //delete product here
         $product->delete();
         return response()->json(['message' => 'Deleted']);
     }
