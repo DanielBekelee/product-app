@@ -14,7 +14,7 @@ class ProductController extends Controller
     {
         return response()->json(Product::orderBy('created_at','desc')->get());
     }
-
+//create product here man
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
