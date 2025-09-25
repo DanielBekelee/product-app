@@ -1,0 +1,61 @@
+name: CI - Backend (Laravel)
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: productdb
+          POSTGRES_USER: productuser
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U productuser"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+          extensions: pdo_pgsql
+
+      - name: Install dependencies
+        run: composer install --working-dir=backend --no-progress --prefer-dist
+
+      - name: Prepare .env
+        run: |
+          cp backend/.env.example backend/.env
+          sed -i "s/DB_HOST=.*/DB_HOST=127.0.0.1/" backend/.env
+          sed -i "s/DB_DATABASE=.*/DB_DATABASE=productdb/" backend/.env
+          sed -i "s/DB_USERNAME=.*/DB_USERNAME=productuser/" backend/.env
+          sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=secret/" backend/.env
+          php backend/artisan key:generate
+
+      - name: Run migrations
+        run: php backend/artisan migrate --force
+        env:
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: productdb
+          DB_USERNAME: productuser
+          DB_PASSWORD: secret
+
+      - name: Run tests
+        run: php backend/vendor/bin/phpunit --configuration backend/phpunit.xml

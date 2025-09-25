@@ -1,0 +1,49 @@
+name: Build and Push Images
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      # Backend PHP-FPM image
+      - name: Build & Push backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/product-backend:latest
+
+      # Nginx image (with config)
+      - name: Build & Push nginx
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./nginx/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/product-nginx:latest
+
+      # Frontend image
+      - name: Build & Push frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/product-frontend:latest
